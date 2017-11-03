@@ -9,3 +9,5 @@ class MyDriver(Driver):
     #     # Interesting stuff
     #     command = Command(...)
     #     return command
+
+print("hoi")
