@@ -30,5 +30,5 @@ prediction = pd.DataFrame(prediction)
 prediction.columns = ['ACCELERATION','BRAKE','STEERING']
 prediction*sdy+meany
 
-NN1 = pickle.dumps(model)
-joblib.dump(NN1, 'NN1.pkl')
+#NN1 = pickle.dumps(model)
+joblib.dump(model, 'NN1.pkl')
