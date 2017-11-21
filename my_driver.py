@@ -30,6 +30,7 @@ class MyDriver(Driver):
         drivers) successfully driven along the race track.
         """
         command = Command()
+        NN1 = joblib.load("/home/student/Documents/torcs-server/torcs-client/NN1.pkl")
         speed = (carstate.speed_x**2+carstate.speed_y**2+carstate.speed_z**2)**.5
         prediction = NN1.predict([speed,
         carstate.distance_from_center,
