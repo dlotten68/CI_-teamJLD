@@ -19,8 +19,6 @@ class MyDriver(Driver):
     #     command = Command(...)
     #     return command
 
-    NN1 = joblib.load("/home/student/Documents/torcs-server/torcs-client/NN1.pkl")
-
     def drive(self, carstate: State) -> Command:
         """
         Produces driving command in response to newly received car state.
@@ -32,17 +30,15 @@ class MyDriver(Driver):
         command = Command()
         NN1 = joblib.load("/home/student/Documents/torcs-server/torcs-client/NN1.pkl")
         speed = (carstate.speed_x**2+carstate.speed_y**2+carstate.speed_z**2)**.5
-        prediction = NN1.predict([speed,
-        carstate.distance_from_center,
-        castate.angle,
-        carstate.distances_from_edge].values.reshape(1,-1))
+        hoiArray = pd.Series([speed, carstate.distance_from_center, carstate.angle, carstate.distances_from_edge]).values.reshape(1,-1)
+        prediction = NN1.predict(hoiArray)
         prediction = pd.DataFrame(prediction)
         prediction.columns = ['ACCELERATION','BRAKE','STEERING']
         # prediction*sdy+meany
-        command.steering = self.steering_ctrl.control(
-            prediction[['STEERING']],
-            carstate.current_lap_time
-        )
+        #command.steering = self.steering_ctrl.control(
+        #    prediction[['STEERING']],
+        #    carstate.current_lap_time
+        #)
 
         # ACC_LATERAL_MAX = 6400 * 5
         # v_x = min(80, math.sqrt(ACC_LATERAL_MAX / abs(command.steering)))
