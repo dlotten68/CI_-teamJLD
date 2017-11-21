@@ -11,7 +11,7 @@ from sklearn.neural_network import MLPRegressor
 # prediction = pd.DataFrame(prediction)
 # prediction.columns = ['ACCELERATION','BRAKE','STEERING']
 # prediction*sdy+meany
-#class MyDriver(Driver):
+class MyDriver(Driver):
     # Override the `drive` method to create your own driver
     #...
     # def drive(self, carstate: State) -> Command:
@@ -19,35 +19,33 @@ from sklearn.neural_network import MLPRegressor
     #     command = Command(...)
     #     return command
 
-NN1 = joblib.load("NN1.pkl")
+    NN1 = joblib.load("NN1.pkl")
 
-def drive(self, carstate: State) -> Command:
-    """
-    Produces driving command in response to newly received car state.
+    def drive(self, carstate: State) -> Command:
+        """
+        Produces driving command in response to newly received car state.
 
-    This is a dummy driving routine, very dumb and not really considering a
-    lot of inputs. But it will get the car (if not disturbed by other
-    drivers) successfully driven along the race track.
-    """
-    command = Command()
-    speed = (carstate.speed_x**2+carstate.speed_y**2+carstate.speed_z**2)**.5
-    command.steering = self.steering_ctrl.control(
-        NN1.predict([speed,
-                     carstate.distance_from_center,
-                     carstate.angle,
-                     carstate.distances_from_edge].values.reshape(1,-1)),
-        carstate.current_lap_time
-    )
+        This is a dummy driving routine, very dumb and not really considering a
+        lot of inputs. But it will get the car (if not disturbed by other
+        drivers) successfully driven along the race track.
+        """
+        command = Command()
+        speed = (carstate.speed_x**2+carstate.speed_y**2+carstate.speed_z**2)**.5
+        command.steering = self.steering_ctrl.control(
+            NN1.predict([speed,
+                         carstate.distance_from_center,
+                         carstate.angle,
+                         carstate.distances_from_edge].values.reshape(1,-1)),
+            carstate.current_lap_time
+        )
 
-    # ACC_LATERAL_MAX = 6400 * 5
-    # v_x = min(80, math.sqrt(ACC_LATERAL_MAX / abs(command.steering)))
-    v_x = 80
+        # ACC_LATERAL_MAX = 6400 * 5
+        # v_x = min(80, math.sqrt(ACC_LATERAL_MAX / abs(command.steering)))
+        v_x = 80
 
-    self.accelerate(carstate, v_x, command)
+        self.accelerate(carstate, v_x, command)
 
-    if self.data_logger:
-        self.data_logger.log(carstate, command)
+        if self.data_logger:
+            self.data_logger.log(carstate, command)
 
-    return command
-
-
+        return command
