@@ -19,7 +19,7 @@ class MyDriver(Driver):
     #     command = Command(...)
     #     return command
 
-    NN1 = joblib.load("NN1.pkl")
+    NN1 = joblib.load("/home/student/Documents/torcs-server/torcs-client/NN1.pkl")
 
     def drive(self, carstate: State) -> Command:
         """
