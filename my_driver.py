@@ -13,6 +13,8 @@ maxSteer = 0
 minSteer = 0
 recover = 0
 wrongwaycounter = 0
+berm = 0
+bermsolve = 0
 
 
 class MyDriver(Driver):
@@ -50,6 +52,7 @@ class MyDriver(Driver):
 
     # Deze is met heuristiek
     def steer(self, carstate, target_track_pos, corner, command):
+        global berm
         global stuckCounter
         global steerPrevious
         global wrongwaycounter
@@ -59,6 +62,16 @@ class MyDriver(Driver):
 
         maxDistance = max(carstate.distances_from_edge)
         maxDistanceIndex = carstate.distances_from_edge.index(max(carstate.distances_from_edge))
+
+        if(abs(carstate.distance_from_center)>1 and
+        abs(carstate.distance_from_center)<1.1 and
+        abs(carstate.wheel_velocities[0]-carstate.wheel_velocities[1])>100 and
+        abs(carstate.wheel_velocities[2]-carstate.wheel_velocities[3])>100):
+            berm += 1
+            print("Berm" + repr(berm))
+        else:
+             berm = 0
+
 
         if(abs(carstate.angle)>120):
             wrongwaycounter +=1
@@ -79,6 +92,9 @@ class MyDriver(Driver):
         if(stuckCounter >= 200) or wrongwaycounter>100:
             recover = 10000
             self.iAmStuck(carstate,target_track_pos, command)
+        elif(berm >100):
+            recover = 1000
+            self.solveberm(carstate, target_track_pos, command)
         elif(abs(carstate.distance_from_center) > 0.8):
             if(abs(carstate.distance_from_center) > 1):
                 recover = 10000
@@ -88,13 +104,21 @@ class MyDriver(Driver):
         else:
             self.standardSteering(carstate, target_track_pos, corner, command)
 
+    def solveberm(self, carstate, target_track_pos, command):
+        global recover
+        global bermsolve
+        if carstate.distance_from_center <0.0:
+            steering = 1
+        else:
+            steering = -1
+        bermsolve = 1
 
     def adjustedSteering(self, carstate, target_track_pos, command):
         global steerPrevious
         global recover
         steering = (target_track_pos - carstate.distance_from_center)/5
         if recover >0:
-            recover -=1
+            recover -=10
 
         print("adjust steering ")
         print("steering:" + repr(steering))
@@ -112,7 +136,7 @@ class MyDriver(Driver):
         print("I am stuck")
         print("carstate.gear:" + repr(carstate.gear))
         if recover < 0:
-            recover -=1
+            recover -=10
 
         steering = -carstate.angle / 45
         print("steering:" + repr(steering))
@@ -140,6 +164,7 @@ class MyDriver(Driver):
     def accelerate(self, carstate, target_speed, command):
         global stuckCounter
         global recover
+        global bermsolve
         # compensate engine deceleration, but invisible to controller to
         # prevent braking:
         speed_error = 1.0025 * target_speed * MPS_PER_KMH - carstate.speed_x
@@ -170,6 +195,9 @@ class MyDriver(Driver):
 
             if recover > 0:
                 acceleration = min(0.4, acceleration)
+                if bermsolve == 1:
+                    acceleration = 0
+                    bermsolve = 0
 
             command.accelerator = min(acceleration, 1)
         print("acceleration:" + repr(acceleration))
@@ -222,7 +250,7 @@ class MyDriver(Driver):
         print("steering:" + repr(steering))
         steerPrevious = steering
         if recover > 0:
-            recover -=500
+            recover -=50
         if recover < 0:
             recover = 0
         command.steering = self.steering_ctrl.control(
