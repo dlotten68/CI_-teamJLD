@@ -72,7 +72,6 @@ class MyDriver(Driver):
         else:
              berm = 0
 
-
         if(abs(carstate.angle)>120):
             wrongwaycounter +=1
         else:
@@ -85,10 +84,12 @@ class MyDriver(Driver):
         speed = (carstate.speed_x**2+carstate.speed_y**2+carstate.speed_z**2)**.5
         if(abs(carstate.angle) > 20 and
         carstate.speed_x<10 and
-        abs(carstate.distance_from_center) > 0.5) and (carstate.distance_from_center*carstate.angle)<0.0:
+        abs(carstate.distance_from_center) > 0.5) and
+        (carstate.distance_from_center*carstate.angle)<0.0):
             stuckCounter = stuckCounter + 1
         else:
             stuckCounter = 0
+
         if(stuckCounter >= 200) or wrongwaycounter>100:
             recover = 10000
             self.iAmStuck(carstate,target_track_pos, command)
@@ -118,7 +119,7 @@ class MyDriver(Driver):
         global recover
         steering = (target_track_pos - carstate.distance_from_center)/5
         if recover >0:
-            recover -=10
+            recover -=1
 
         print("adjust steering ")
         print("steering:" + repr(steering))
@@ -136,7 +137,7 @@ class MyDriver(Driver):
         print("I am stuck")
         print("carstate.gear:" + repr(carstate.gear))
         if recover < 0:
-            recover -=10
+            recover -=1
 
         steering = -carstate.angle / 45
         print("steering:" + repr(steering))
@@ -180,7 +181,6 @@ class MyDriver(Driver):
             if abs(carstate.distance_from_center) >= 1.0:
                 # off track, reduced grip:
                 acceleration = min(0.5, acceleration)
-
 
             if(abs(carstate.distance_from_center) < 0.8 and abs(carstate.angle) > 30):
                 acceleration = min(0.3, acceleration)
