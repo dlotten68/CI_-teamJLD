@@ -84,8 +84,7 @@ class MyDriver(Driver):
         speed = (carstate.speed_x**2+carstate.speed_y**2+carstate.speed_z**2)**.5
         if(abs(carstate.angle) > 20 and
         carstate.speed_x<10 and
-        abs(carstate.distance_from_center) > 0.5) and
-        (carstate.distance_from_center*carstate.angle)<0.0):
+        abs(carstate.distance_from_center) > 0.5) and (carstate.distance_from_center*carstate.angle)<0.0:
             stuckCounter = stuckCounter + 1
         else:
             stuckCounter = 0
