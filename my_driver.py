@@ -1,5 +1,6 @@
 from pytocl.driver import Driver
 from pytocl.car import State, Command, MPS_PER_KMH
+#from pytocl.Opponents import State
 import sklearn
 import pandas as pd
 import numpy as np
@@ -15,6 +16,7 @@ recover = 0
 wrongwaycounter = 0
 berm = 0
 bermsolve = 0
+closest = 0
 
 
 class MyDriver(Driver):
@@ -50,15 +52,40 @@ class MyDriver(Driver):
 
         return command
 
+    def overtaking(self, carstate, target_track_pos, command):
+        closest = carstate.opponents.index(min(carstate.opponents))
+        print("distance_to =" + repr(min(carstate.opponents)))
+        d = -1*math.cos((math.pi)/180 * closest*10+5)
+
+
     # Deze is met heuristiek
     def steer(self, carstate, target_track_pos, corner, command):
+        global closest
         global berm
         global stuckCounter
         global steerPrevious
         global wrongwaycounter
         global recover
-        print("carstate angle: "+ repr(carstate.angle))
-        print("carstate distance from center: " +repr(carstate.distance_from_center))
+        #print("carstate angle: "+ repr(carstate.angle))
+        #print("carstate distance from center: " +repr(carstate.distance_from_center))
+        print("distanceto =" + repr(min(carstate.opponents)))
+        distanceto = min(carstate.opponents)
+        print("opp sensor =" + repr(carstate.opponents.index(min(carstate.opponents))))
+        closest = carstate.opponents.index(min(carstate.opponents))
+        dddd = -distanceto*math.cos((math.pi)/180 * closest*10+5)
+
+#        print("x dist =" + repr(dX))
+#        d = "none"
+#        if(dddd < -7.5):
+#            d = "back"
+#        elif(dddd< 7.5):
+#            d = "parallel"
+#        elif(dddd<35):
+#            d = "close"
+#        print("forward distance = " + d)
+
+
+
 
         maxDistance = max(carstate.distances_from_edge)
         maxDistanceIndex = carstate.distances_from_edge.index(max(carstate.distances_from_edge))
@@ -195,7 +222,7 @@ class MyDriver(Driver):
             if recover > 0:
                 acceleration = min(0.4, acceleration)
                 if bermsolve == 1:
-                    acceleration = 0
+                    #acceleration = 0
                     bermsolve = 0
 
             command.accelerator = min(acceleration, 1)
