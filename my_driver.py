@@ -52,27 +52,111 @@ class MyDriver(Driver):
 
         return command
 
-    def overtaking(self, carstate, target_track_pos, command):
-        closest = carstate.opponents.index(min(carstate.opponents))
-        print("distance_to =" + repr(min(carstate.opponents)))
-        d = -1*math.cos((math.pi)/180 * closest*10+5)
+    def avoidance(self, steerkind, steering, carstate):
+        min_range = 201
+        min_sensor = 40
+        hard = 0.3
+        firm = 0.25
+        steerplan = steering # store our original steerplan
+
+        for sensor in range(12,23): # kijk +60 tot -60 graden vooruit
+            if(carstate.opponents[sensor]<min_range):
+                min_sensor = sensor
+            min_range = min(min_range, carstate.opponents[sensor])
+        if(min_sensor == 12 and min_range/carstate.speed_x >= 0.30): # closest opp 60+ degrees left and close enough
+            steering -= 0.1 # steer a little to the right
+        if(min_sensor == 13 and min_range/carstate.speed_x >= 0.50 or min_sensor == 14 and min_range/carstate.speed_x>=0.50): #closest opp 50 or 40 degrees left and close enough
+            steering -= 0.12
+        if(min_sensor == 15 and min_range/carstate.speed_x >= 0.75): #closest opp 30 degrees left and close enough
+            steering -= 0.13
+        if(min_sensor == 16 and min_range/carstate.speed_x >= 0.75): #closest opp 20 degrees left and close enough
+            steering -= 0.14
+        if(min_sensor == 17 and min_range/carstate.speed_x >= 1): #closest opp 10 degrees left and close enough
+            steering -= 0.15
+
+        if(min_sensor == 18 and min_range/carstate.speed_x >= 1): #closest opp 10 degrees right and close enough
+            steering += 0.15  # steer to the left
+        if(min_sensor == 19 and min_range/carstate.speed_x >= 0.75): #closest opp 20 degrees right and close enough
+            steering += 0.14
+        if(min_sensor == 20 and min_range/carstate.speed_x >= 0.75): #closest opp 30 degrees right and close enough
+            steering += 0.13
+        if(min_sensor == 21 and min_range/carstate.speed_x >= 0.50 or min_sensor == 22 and min_range/carstate.speed_x>=0.50): #closest opp 50 or 40 degrees right and close enough
+            steering += 0.12
+        if(min_sensor == 23 and min_range/carstate.speed_x >= 0.30): # closest opp 60+ degrees right and close enough
+            steering -= 0.1 # steer a little to the right
+
+        # above were the overtake scenarios ... these wlll be overwritten if any of the following are true
+        if(min_sensor == 14 and min_range <= 10): # closest opp 30+ degrees left and close
+            steering -= firm # steer to the right
+        if(min_sensor == 15 and min_range <= 10): # closest opp 20-30 degrees left and close
+            steering -= firm # steer to the right
+        if(min_sensor == 16 and min_range <= 10): # closest opp 10-20 degrees left and close
+            steering -= firm # steer to the right
+
+        meeOfTegen = 0
+        if(carstate.distance_from_center*steering>0):
+            meeOfTegen = -1
+        else:
+            meeOfTegen = 1
+
+        if(min_sensor == 17 and min_range<=10 or min_sensor == 18 and min_range <= 10): # closest opp dead ahead and close
+            steering -= 0.1 # steer a little to the right
+            print("collision imminent")
+            if(steerkind == 1):
+                if(steering < 0):
+                    steering -= 0.3*meeOfTegen # if we are on edge of track do not steer offTrack
+                else:
+                    steering += 0.3*meeOfTegen
+            elif(steerkind == 0): #( steerkind == 0 is normalsteering)
+                if(steering < 0):
+                    steering -= 0.3
+                else:
+                    steering += 0.3
+        if(min_sensor == 19 and min_range <= 10): # closest opp 30+ degrees left and close
+            steering += 0.25 # steer to the right
+        if(min_sensor == 20 and min_range <= 10): # closest opp 20-30 degrees left and close
+            steering += 0.25 # steer to the right
+        if(min_sensor == 21 and min_range <= 10): # closest opp 10-20 degrees left and close
+            steering += 0.25 # steer to the right
+# we will not go off track to avoid a collision. If the new steer will get us off track, we will revert to our original steer
+        if(steerkind == 1 and carstate.distance_from_center*steering>0): #if we are on the edge and intend to steer more in that direction, revert to plan
+            steering = steerplan
+#         closest = carstate.opponents.index(min(carstate.opponents)) # dit is een sensor nummer
+#         meeOfTegen = 0
+#         print("distance_to =" + repr(min(carstate.opponents)))
+#         d = -1*math.cos((math.pi)/180 * closest*10+5)
+#         print("distanceto =" + repr(min(carstate.opponents)))
+#         distanceto = min(carstate.opponents)
+#         print("opp sensor =" + repr(carstate.opponents.index(min(carstate.opponents))))
+#         closest = carstate.opponents.index(min(carstate.opponents)) # sensor nummer
+#         dX = -distanceto*math.cos((math.pi)/180 * closest*10+5) # dit is de x afstand (langs de rijrichting)
+# #       front collision avoidance
+#         mindist = 200
+#         for sensor in range(16,19):
+#              mindist = min(mindist, carstate.opponents[sensor])
+#         sensor18reading_X = -mindist*math.cos((math.pi)/180 * 18*10)
+#         if(carstate.distance_from_center*steering>0):
+#             meeOfTegen = -1
+#         else:
+#             meeOfTegen = 1
+#         if(sensor18reading_X <= 15):
+#             print("collision imminent" + repr(sensor18reading_X))
+#             if(steerkind == 1):
+#                 if(steering < 0):
+#                     steering -= 0.3*meeOfTegen
+#                 else:
+#                     steering+=0.3*meeOfTegen
+#             elif(steerkind == 0): #(dus steerkind == 0 is normalsteering)
+#                 if(steering < 0):
+#                     steering -= 0.3
+#                 else:
+#                     steering += 0.3
+
+        print("minsensor = " + repr(min_sensor))
+        print("mindist = " + repr(min_range))
+        return steering
 
 
-    # Deze is met heuristiek
-    def steer(self, carstate, target_track_pos, corner, command):
-        global closest
-        global berm
-        global stuckCounter
-        global steerPrevious
-        global wrongwaycounter
-        global recover
-        #print("carstate angle: "+ repr(carstate.angle))
-        #print("carstate distance from center: " +repr(carstate.distance_from_center))
-        print("distanceto =" + repr(min(carstate.opponents)))
-        distanceto = min(carstate.opponents)
-        print("opp sensor =" + repr(carstate.opponents.index(min(carstate.opponents))))
-        closest = carstate.opponents.index(min(carstate.opponents))
-        dddd = -distanceto*math.cos((math.pi)/180 * closest*10+5)
 
 #        print("x dist =" + repr(dX))
 #        d = "none"
@@ -86,6 +170,19 @@ class MyDriver(Driver):
 
 
 
+
+
+
+    # Deze is met heuristiek
+    def steer(self, carstate, target_track_pos, corner, command):
+        global closest
+        global berm
+        global stuckCounter
+        global steerPrevious
+        global wrongwaycounter
+        global recover
+        #print("carstate angle: "+ repr(carstate.angle))
+        #print("carstate distance from center: " +repr(carstate.distance_from_center))
 
         maxDistance = max(carstate.distances_from_edge)
         maxDistanceIndex = carstate.distances_from_edge.index(max(carstate.distances_from_edge))
@@ -148,8 +245,11 @@ class MyDriver(Driver):
             recover -=1
 
         print("adjust steering ")
-        print("steering:" + repr(steering))
+#        print("steering:" + repr(steering))
         steerPrevious = steering
+        ############################################
+        steering = self.avoidance(1, steering, carstate)
+
         command.steering = self.steering_ctrl.control(
                 steering,
                 carstate.current_lap_time
@@ -248,7 +348,7 @@ class MyDriver(Driver):
         global steerPrevious
         global recover
         print("Standard")
-        print("Maxdist "+repr(max(carstate.distances_from_edge)))
+#        print("Maxdist "+repr(max(carstate.distances_from_edge)))
         # range_finder_angles are all angles -90, ..., 0, ..., 90
         #                -90-75-60-45-30, -20,  -15,  -10, -5,
         steeringDegrees = [1, 1, 1, 1, 1, 0.75, 0.63, 0.5, 0.25, \
@@ -279,6 +379,11 @@ class MyDriver(Driver):
             recover -=50
         if recover < 0:
             recover = 0
+    ###############################################3
+        steering = self.avoidance(0, steering, carstate)
+#        print("cs.curr lapt:" + repr(carstate.current_lap_time))
+
+#        print("steering check:" + repr(steering))
         command.steering = self.steering_ctrl.control(
                 steering,
                 carstate.current_lap_time
