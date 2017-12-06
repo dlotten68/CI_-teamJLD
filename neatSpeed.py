@@ -26,13 +26,19 @@ testdrive = testdrive[
      'track5', 'track6', 'track7', 'track8', 'track9', 'track10', 'track11', 'track12', 'track13', 'track14', 'track15',
      'track16', 'track17', 'track18']]
 #  Set new names testdrive, so they can be concate
-testdrive.columns = [
-    ['ACCELERATION', 'STEERING', 'SPEED', 'TRACK_POSITION', 'ANGLE_TO_TRACK_AXIS', 'TRACK_EDGE_0', 'TRACK_EDGE_1',
-     'TRACK_EDGE_2', 'TRACK_EDGE_3', 'TRACK_EDGE_4', 'TRACK_EDGE_5', 'TRACK_EDGE_6', 'TRACK_EDGE_7', 'TRACK_EDGE_8',
-     'TRACK_EDGE_9', 'TRACK_EDGE_10', 'TRACK_EDGE_11', 'TRACK_EDGE_12', 'TRACK_EDGE_13', 'TRACK_EDGE_14',
-     'TRACK_EDGE_15', 'TRACK_EDGE_16', 'TRACK_EDGE_17', 'TRACK_EDGE_18']]
+# testdrive.columns = [
+#     ['ACCELERATION', 'STEERING', 'SPEED', 'TRACK_POSITION', 'ANGLE_TO_TRACK_AXIS', 'TRACK_EDGE_0', 'TRACK_EDGE_1',
+#      'TRACK_EDGE_2', 'TRACK_EDGE_3', 'TRACK_EDGE_4', 'TRACK_EDGE_5', 'TRACK_EDGE_6', 'TRACK_EDGE_7', 'TRACK_EDGE_8',
+#      'TRACK_EDGE_9', 'TRACK_EDGE_10', 'TRACK_EDGE_11', 'TRACK_EDGE_12', 'TRACK_EDGE_13', 'TRACK_EDGE_14',
+#      'TRACK_EDGE_15', 'TRACK_EDGE_16', 'TRACK_EDGE_17', 'TRACK_EDGE_18']]
+columnNames = ['ACCELERATION', 'STEERING', 'SPEED', 'TRACK_POSITION', 'ANGLE_TO_TRACK_AXIS', 'TRACK_EDGE_0',
+               'TRACK_EDGE_1', 'TRACK_EDGE_2', 'TRACK_EDGE_3', 'TRACK_EDGE_4', 'TRACK_EDGE_5', 'TRACK_EDGE_6',
+               'TRACK_EDGE_7', 'TRACK_EDGE_8', 'TRACK_EDGE_9', 'TRACK_EDGE_10', 'TRACK_EDGE_11', 'TRACK_EDGE_12',
+               'TRACK_EDGE_13', 'TRACK_EDGE_14', 'TRACK_EDGE_15', 'TRACK_EDGE_16', 'TRACK_EDGE_17', 'TRACK_EDGE_18']
 #  Concatenate dataframes to one super train data frame
-trainDataFrame = pd.concat([aalborg, alpine1, fspeedway, testdrive])
+trainDataFrame = pd.DataFrame(np.concatenate((aalborg.values, alpine1.values, fspeedway.values, testdrive.values)),
+                              columns=columnNames)
+# trainDataFrame = pd.concat([aalborg, alpine1, fspeedway, testdrive], ignore_index=True)
 #  Make a list of tracknames
 trackNAMES = ['TRACK_EDGE_0', 'TRACK_EDGE_1', 'TRACK_EDGE_2', 'TRACK_EDGE_3', 'TRACK_EDGE_4', 'TRACK_EDGE_5',
               'TRACK_EDGE_6', 'TRACK_EDGE_7', 'TRACK_EDGE_8', 'TRACK_EDGE_9', 'TRACK_EDGE_10', 'TRACK_EDGE_11',
@@ -40,8 +46,10 @@ trackNAMES = ['TRACK_EDGE_0', 'TRACK_EDGE_1', 'TRACK_EDGE_2', 'TRACK_EDGE_3', 'T
               'TRACK_EDGE_18']
 #  Drop every row with an NA
 trainDataFrame.dropna(axis=0, inplace=True)
-
+#  Make angle in degrees
+trainDataFrame['ANGLE_TO_TRACK_AXIS'] = trainDataFrame['ANGLE_TO_TRACK_AXIS']*180/math.pi
 trainDataFrame['MAX_DISTANCE'] = trainDataFrame[trackNAMES].max(axis=1)
+
 
 def cornerLearner(trackData):
     N = len(trackData)
@@ -72,8 +80,9 @@ def cornerLearner(trackData):
                           np.sign(r[i, 0] * r[i + 1, 1] - r[i, 1] * r[i + 1, 0])
     return corner
 
+
 trainDataFrame['CORNER'] = trainDataFrame[trackNAMES].apply(func=cornerLearner, axis=1);
-trainDataFrame['TRACK_WIDTH'] = trainDataFrame['TRACK_EDGE_0'] +  trainDataFrame['TRACK_EDGE_18']
+trainDataFrame['TRACK_WIDTH'] = trainDataFrame['TRACK_EDGE_0'] + trainDataFrame['TRACK_EDGE_18']
 trainDataFrame = trainDataFrame[['ACCELERATION', 'STEERING', 'TRACK_POSITION', 'ANGLE_TO_TRACK_AXIS', 'TRACK_EDGE_0',
                                  'TRACK_EDGE_7', 'TRACK_EDGE_9', 'TRACK_EDGE_11', 'TRACK_EDGE_18', 'MAX_DISTANCE',
                                  'CORNER', 'TRACK_WIDTH', 'SPEED']]
@@ -81,20 +90,20 @@ trainDataFrame = trainDataFrame[['ACCELERATION', 'STEERING', 'TRACK_POSITION', '
 scalingFactor = trainDataFrame.drop(['SPEED'], axis=1).abs().max(axis=0)
 speedFactor = trainDataFrame['SPEED'].abs().max()
 
-trainDataSlow = trainDataFrame.loc[trainDataFrame['CORNER'] < 20 ]
+trainDataSlow = trainDataFrame.loc[trainDataFrame['CORNER'] < 20]
 trainDataMedium = trainDataFrame.loc[((trainDataFrame['CORNER'] >= 20) & (trainDataFrame['CORNER'] < 35))]
 trainDataFull = trainDataFrame.loc[trainDataFrame['CORNER'] >= 35]
-speedSlow = trainDataSlow['SPEED']/speedFactor
-speedMedium = trainDataMedium['SPEED']/speedFactor
-speedFull = trainDataFull['SPEED']/speedFactor
+speedSlow = trainDataSlow['SPEED'] / speedFactor
+speedMedium = trainDataMedium['SPEED'] / speedFactor
+speedFull = trainDataFull['SPEED'] / speedFactor
 
 trainDataSlow = trainDataSlow.drop(['SPEED'], axis=1)
 trainDataMedium = trainDataMedium.drop(['SPEED'], axis=1)
 trainDataFull = trainDataFull.drop(['SPEED'], axis=1)
 
-trainDataSlow = trainDataSlow/scalingFactor
-trainDataMedium = trainDataMedium/scalingFactor
-trainDataFull = trainDataFull/scalingFactor
+trainDataSlow = trainDataSlow / scalingFactor
+trainDataMedium = trainDataMedium / scalingFactor
+trainDataFull = trainDataFull / scalingFactor
 
 trainDataSlow = trainDataSlow.apply(tuple, axis=1).tolist()
 trainDataMedium = trainDataMedium.apply(tuple, axis=1).tolist()
@@ -127,6 +136,7 @@ for i in range(len(filenames)):
     # Add a stdout reporter to show progress in the terminal.
     p.add_reporter(neat.StdOutReporter(False))
 
+
     def eval_genomes(genomes, config):
         for genome_id, genome in genomes:
             genome.fitness = 0.0  # set our maximum fitnes
@@ -136,7 +146,8 @@ for i in range(len(filenames)):
             for i in randomIndices:
                 prediction = net.activate(trainData[i])
                 # Error function, difference predicted and real output
-                genome.fitness -= (prediction[0] - observedData[i]) ** 2/sampleSize*speedFactor
+                genome.fitness -= (prediction[0] - observedData[i]) ** 2 / sampleSize * speedFactor
+
 
     winner = p.run(eval_genomes, maximumGens)
 
@@ -149,7 +160,7 @@ for i in range(len(filenames)):
     net = neat.nn.FeedForwardNetwork.create(winner, config)
     for input, observed in zip(trainData[minLines:maxLines], observedData[minLines:maxLines]):
         prediction = net.activate(input)
-        print("Pred: " + repr(speedFactor*prediction[0]) + " Observ: " + repr(speedFactor*observed))
+        print("Pred: " + repr(speedFactor * prediction[0]) + " Observ: " + repr(speedFactor * observed))
 
     # Save genome
     net = neat.nn.FeedForwardNetwork.create(p.best_genome, config)
