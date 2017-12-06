@@ -5,7 +5,6 @@ import random
 import neat
 import gzip
 import pickle
-from __future__ import print_function
 
 aalborg = pd.read_csv('aalborg.csv', index_col=None, engine='python')
 alpine1 = pd.read_csv('alpine-1.csv', index_col=None, engine='python')
