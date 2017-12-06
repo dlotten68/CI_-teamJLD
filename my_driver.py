@@ -36,7 +36,7 @@ class MyDriver(Driver):
         corner = self.cornerLearner(carstate)
         print("corner: "+repr(corner) + " degrees")
         self.steer(carstate, 0.0, corner, command)
-        v = self.speedNeed(corner, carstate)
+        v = self.speedNEAT(corner, carstate)
         if (abs(carstate.distance_from_center) > 1):
             v = 40
         self.accelerate(carstate, v, command)
