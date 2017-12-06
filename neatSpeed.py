@@ -158,14 +158,14 @@ for i in range(len(filenames)):
         pickle.dump((net, scalingFactor, speedFactor), f, protocol=pickle.HIGHEST_PROTOCOL)
 
 ########## BELOW IS LOAD CODE ##########
-
-with gzip.open(filename) as f:
-    data = pickle.load(f)
-prediction = data[0].activate(trainData[5])
-
-########## TEST FOR MYSELF ########
-minLines = 2000  # Between 0 and max Lines
-maxLines = 2010  # Between min Lines and 32400
-for input, observed in zip(trainData[minLines:maxLines], observedData[minLines:maxLines]):
-    prediction = data[0].activate(input)
-    print("Pred: " + repr(data[2]*prediction[0]) + " Observ: " + repr(data[2]*observed))
+#
+# with gzip.open(filename) as f:
+#     data = pickle.load(f)
+# prediction = data[0].activate(trainData[5])
+#
+# ########## TEST FOR MYSELF ########
+# minLines = 2000  # Between 0 and max Lines
+# maxLines = 2010  # Between min Lines and 32400
+# for input, observed in zip(trainData[minLines:maxLines], observedData[minLines:maxLines]):
+#     prediction = data[0].activate(input)
+#     print("Pred: " + repr(data[2]*prediction[0]) + " Observ: " + repr(data[2]*observed))
