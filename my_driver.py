@@ -316,9 +316,6 @@ class MyDriver(Driver):
 
             command.accelerator = min(acceleration, 1)
 
-            if carstate.rpm > 8000:
-                command.gear = carstate.gear + 1
-
             if recover > 0:
                 acceleration = min(0.4, acceleration)
                 if bermsolve == 1:
@@ -328,14 +325,17 @@ class MyDriver(Driver):
             command.accelerator = min(acceleration, 1)
         print("acceleration:" + repr(acceleration))
 
-        if carstate.rpm < 2500 :
-            if(carstate.gear != -1):
-                command.gear = carstate.gear - 1
-            if(command.gear == -2):
-                print("+++++++++++++++++++++++++++++++++++++++++++")
-                system.exit()
+        if ((carstate.gear == 1 or carstate.gear == 2 or carstate.gear == 3) and carstate.rpm >= 9000):
+            command.gear = carstate.gear + 1
+        elif ((carstate.gear == 4 or carstate.gear == 5) and carstate.rpm >= 8000):
+            command.gear = carstate.gear + 1
+            # Shift down
+        elif ((carstate.gear == 2 or carstate.gear == 3 or carstate.gear == 4) and carstate.rpm <= 3000):
+            command.gear = carstate.gear - 1
+        elif ((carstate.gear == 5 or carstate.gear == 6) and carstate.rpm <= 3500):
+            command.gear = carstate.gear - 1
 
-        if(stuckCounter >= 200): #or wrongwaycounter>100:
+        if(stuckCounter >= 200 and carstate.gear == 0): #or wrongwaycounter>100:
             command.gear = -1
 
         if not command.gear:
@@ -395,8 +395,9 @@ class MyDriver(Driver):
         for i in range(N):
             border[i,:] = [-math.cos(i*math.pi/18)*carstate.distances_from_edge[i],
                            math.sin(i*math.pi/18)*carstate.distances_from_edge[i]]
-        maxIndex = carstate.distances_from_edge.index(max(carstate.distances_from_edge))
-        minIndex = carstate.distances_from_edge.index(max(carstate.distances_from_edge))
+        indexList = [i for i, j in enumerate(carstate.distances_from_edge) if j == max(carstate.distances_from_edge)]
+        maxIndex = indexList[-1]
+        minIndex = indexList[0]
 
         l = np.zeros([max(minIndex-1,0),2])
         for i in range(minIndex-1):
