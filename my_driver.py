@@ -10,6 +10,7 @@ import pickle
 
 stuckCounter = 0
 steerPrevious = 0
+accelerationPrevious = 0
 maxSteer = 0
 minSteer = 0
 recover = 0
@@ -241,6 +242,7 @@ class MyDriver(Driver):
         global stuckCounter
         global recover
         global bermsolve
+        global acceleration
         # compensate engine deceleration, but invisible to controller to
         # prevent braking:
         speed_error = 1.0025 * target_speed * MPS_PER_KMH - math.sqrt(
@@ -279,7 +281,7 @@ class MyDriver(Driver):
         if acceleration < 0:
             command.accelerator = 0
             command.brake = min(abs(acceleration), 1) * 0.4
-
+        accelerationPrevious = acceleration
         print("acceleration:" + repr(acceleration))
 
         if (carstate.gear == 1 or carstate.gear == 2 or carstate.gear == 3) and carstate.rpm >= 9000:
@@ -411,7 +413,7 @@ class MyDriver(Driver):
         else:  # corner <= 35, slow or hairpin
             filename = filenames[2]
 
-        inputList = [acceleratePrevious,
+        inputList = [accelerationPrevious,
         steerPrevious,
         carstate.distance_from_center,
         carstate.angle,
