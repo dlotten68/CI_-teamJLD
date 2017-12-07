@@ -1,0 +1,45 @@
+GITHUB, clone bestanden, in terminal:
+cd Documents
+git clone https://github.com/dlotten68/CI_-teamJLD.git
+(Vergeet niet my_driver.py bij te werken in torcs-server/torcs-client)
+RACEN met display:
+Kopieer de folder "neat" uit Documents/CI_-teamJLD.git
+naar Documents/torcs-server/torcs-client
+
+(Zorg dat je in home directory zit, cd .. / ..)
+torcs
+./Documents/torcs-server/torcs-client/start.sh
+
+RACEN Zonder display:
+./Documents/torcs-server/torcs_tournament.py ./Documents/torcs-server/quickrace.yml
+
+WACHTWOORD:
+IloveIC
+
+NEAT:
+Maak een mapje offlineTraining aan in Documents
+Kopieer en plak uit de gecolende git folder in Documents/CI_-teamJLD.git 
+naar offlineTraining:
+neat (folder), 
+aalborg.csv, apline-1.csv, f-speedway.csv, testdrive.csv, 
+configuration (text)
+neatSpeed.py
+
+Doe NEAT via terminal:
+cd Documents/offlineTraining
+python3 neatSpeed.py
+
+
+PARAMETERS NEAT:
+In configuration staan parameters, te varieren zijn:
+pop_size (onder kopje [NEAT] bovenaan)
+conn_add_prob, conn_delete_prob (meer kans op toevoegen, minder op delete)
+node_add_prob, node_delete_prob (meer kans op toevoegen, minder op delete)
+(Als we input of output veranderen, geef je aan hoeveel num_inputs, num_outputs)
+we kunnen starten met num_hidden nodes != 0, nu beginnen we met 0 hidden nodes.
+
+
+INSTALLATIE TORCS:
+pip3 install -U scikit-learn
+pip3 install pandas
+pip3 install scipy
