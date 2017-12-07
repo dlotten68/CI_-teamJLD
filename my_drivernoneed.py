@@ -13,6 +13,7 @@ steerPrevious  = 0
 maxSteer = 0
 minSteer = 0
 recover = 0
+recovery = False
 wrongwaycounter = 0
 berm = 0
 bermsolve = 0
@@ -181,6 +182,7 @@ class MyDriver(Driver):
         global steerPrevious
         global wrongwaycounter
         global recover
+        global recovery
         global unstuckCounter
         #print("carstate angle: "+ repr(carstate.angle))
         #print("carstate distance from center: " +repr(carstate.distance_from_center))
@@ -207,17 +209,16 @@ class MyDriver(Driver):
             command.gear = 1
         print("stuckCounter " + repr(stuckCounter))
         speed = (carstate.speed_x**2+carstate.speed_y**2+carstate.speed_z**2)**.5
-        if(abs(carstate.angle) > 20 and
-        carstate.speed_x<10 and
-        abs(carstate.distance_from_center) > 0.5) and (carstate.distance_from_center*carstate.angle)<0.0:
+        # in if : carstate.speed_x<10 and ???
+        if abs(carstate.angle) > 20 and abs(carstate.distance_from_center) > 0.5 and (carstate.distance_from_center*carstate.angle)<0.0:
             stuckCounter = stuckCounter + 1
+        #elif recovery and carstate.speed_x<1
         else:
-
+            recovery = False
             stuckCounter = 0
 
-
-
         if(stuckCounter >= 200 or wrongwaycounter>100):
+            recovery = True
             recover = 10000
             self.iAmStuck(carstate,target_track_pos, command)
         # elif(unstuckCounter>0):
@@ -234,8 +235,18 @@ class MyDriver(Driver):
                 self.offTrack(carstate,target_track_pos, command)
             else:
                 self.adjustedSteering(carstate, target_track_pos, command)
+        elif abs(carstate.angle) > 20:
+            self.allignWithAxis(carstate, target_track_pos, command)
         else:
             self.standardSteering(carstate, target_track_pos, corner, command)
+
+    def allignWithAxis(self, carstate, target_track_pos, command):
+        steering = (carstate.angle - 30*carstate.distance_from_center)/45
+        if(carstate.speed_x < 0): -steering
+        command.steering = self.steering_ctrl.control(
+                steering,
+                carstate.current_lap_time
+        )
 
     def solveberm(self, carstate, target_track_pos, command):
         global recover
@@ -364,9 +375,15 @@ class MyDriver(Driver):
         elif ((carstate.gear == 5 or carstate.gear == 6) and carstate.rpm <= 3500):
             command.gear = carstate.gear - 1
 
-        if(stuckCounter >= 200 or wrongwaycounter>100) and carstate.gear >= -1: #or wrongwaycounter>100:
-            command.gear = -1
+        if stuckCounter >= 200 or wrongwaycounter>100:
+              command.gear = -1
 
+        if stuckCounter >= 200 and recovery:
+            command.accelerator = 0
+            command.brake = 0.5
+
+        if carstate.gear < -1:
+            command.gear = -1
 
         if not command.gear:
             command.gear = carstate.gear or 1
@@ -399,7 +416,7 @@ class MyDriver(Driver):
         print("steering:" + repr(steering))
         steerPrevious = steering
         if recover > 0:
-            if(abs(carstate.angle >20)):
+            if(abs(carstate.angle) > 20):
                  steering = carstate.angle/30
             recover -=50
         if recover < 0:
