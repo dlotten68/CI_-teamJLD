@@ -103,14 +103,14 @@ class MyDriver(Driver):
             print("collision imminent")
             if (steerkind == 1):
                 if (steering < 0):
-                    steering -= 0.3 * meeOfTegen  # if we are on edge of track do not steer offTrack
+                    steering -= hard * meeOfTegen  # if we are on edge of track do not steer offTrack
                 else:
-                    steering += 0.3 * meeOfTegen
+                    steering += hard * meeOfTegen
             elif (steerkind == 0):  # ( steerkind == 0 is normalsteering)
                 if (steering < 0):
-                    steering -= 0.3
+                    steering -= hard
                 else:
-                    steering += 0.3
+                    steering += hard
         if (min_sensor == 19 and min_range <= 10):  # closest opp 30+ degrees left and close
             steering += 0.25  # steer to the right
         if (min_sensor == 20 and min_range <= 10):  # closest opp 20-30 degrees left and close
@@ -144,7 +144,7 @@ class MyDriver(Driver):
         else:
             berm = 0
 
-        if (abs(carstate.angle) > 120):
+        if (abs(carstate.angle) > 120 and carstate.gear >0):
             wrongwaycounter += 1
         else:
             wrongwaycounter = 0
@@ -163,7 +163,6 @@ class MyDriver(Driver):
             stuckCounter = 0
 
         if (stuckCounter >= 200 or wrongwaycounter > 100):
-            # unstuckCounter = 20
             recover = 10000
             self.iAmStuck(carstate, target_track_pos, command)
 
@@ -180,12 +179,14 @@ class MyDriver(Driver):
             self.standardSteering(carstate, target_track_pos, corner, command)
 
     def solveberm(self, carstate, target_track_pos, command):
+        global recover
         global bermsolve
-        if carstate.distance_from_center < 0.0:
+        if carstate.distance_from_center <0.0:
             steering = 1
         else:
             steering = -1
         bermsolve = 1
+        self.accelerate(carstate, 100, command)
 
     def adjustedSteering(self, carstate, target_track_pos, command):
         global steerPrevious
@@ -209,11 +210,12 @@ class MyDriver(Driver):
     def iAmStuck(self, carstate, target_track_pos, command):
         global steerPrevious
         global recover
-
+        # 128 moet hij -angle/180 doen. dus naar rechts, want staat links vast met scherpe hoek tegen boarding?
+        # -137 staat hij ook links vast..
         print("I am stuck")
         print("carstate.gear:" + repr(carstate.gear))
         if recover > 0:
-            recover -= 1
+            recover -=1
 
         steering = -carstate.angle / 45
         print("steering:" + repr(steering))
@@ -222,21 +224,23 @@ class MyDriver(Driver):
             steering,
             carstate.current_lap_time
         )
+        self.accelerate(carstate, 30, command)
 
     def offTrack(self, carstate, target_track_pos, command):
         global steerPrevious
         global recover
         print("outside track")
-        steering = (carstate.angle - 30 * carstate.distance_from_center) / 45
-        if recover > 0:
-            recover -= 1
+        steering = (carstate.angle - 30 * carstate.distance_from_center)/45
+        if recover>0:
+            recover -=1
         print("steering:" + repr(steering))
         steerPrevious = steering
         command.steering = self.steering_ctrl.control(
             steering,
             carstate.current_lap_time
         )
-        print("wheelspin: " + repr(carstate.wheel_velocities))
+        print("wheelspin: " +repr(carstate.wheel_velocities))
+        self.accelerate(carstate, 50, command)
 
     def accelerate(self, carstate, target_speed, command):
         global stuckCounter
@@ -259,29 +263,20 @@ class MyDriver(Driver):
         acceleration = math.pow(acceleration, 3)  # TODO
 
         if acceleration > 0:
-            if abs(carstate.distance_from_center) >= 1.0:
-                # off track, reduced grip:
-                acceleration = min(0.5, acceleration)
-
-            if abs(carstate.distance_from_center) < 0.8 and abs(carstate.angle) > 30:
+            #if abs(carstate.distance_from_center) >= 1.0 or abs(carstate.distance_from_center) < 0.8 and abs(carstate.angle) > 30 or carstate.gear ==-1 or recover > 0:
+            if(recover>0):
                 acceleration = min(0.4, acceleration)
-
-            if carstate.gear == -1:
-                acceleration = min(0.25, acceleration)
-
-            command.accelerator = min(acceleration, 1)
-
-            if recover > 0:
-                acceleration = min(0.3, acceleration)
-                if bermsolve == 1:
+            if bermsolve == 1:
                     # acceleration = 0
-                    bermsolve = 0
+                bermsolve = 0
 
             command.accelerator = min(acceleration, 1)
         if acceleration < 0:
             command.accelerator = 0
-            command.brake = min(abs(acceleration), 1) * 0.4
+            command.brake = min(abs(acceleration),1) * 0.48
+
         accelerationPrevious = acceleration
+
         print("acceleration:" + repr(acceleration))
 
         if (carstate.gear == 1 or carstate.gear == 2 or carstate.gear == 3) and carstate.rpm >= 9000:
@@ -294,7 +289,7 @@ class MyDriver(Driver):
         elif (carstate.gear == 5 or carstate.gear == 6) and carstate.rpm <= 3500:
             command.gear = carstate.gear - 1
 
-        if (stuckCounter >= 200 or unstuckCounter > 0) and carstate.gear >= -1:  # or wrongwaycounter>100:
+        if(stuckCounter >= 200 or wrongwaycounter>100) and carstate.gear >= -1: #or wrongwaycounter>100:
             command.gear = -1
 
         if not command.gear:
