@@ -78,7 +78,7 @@ trainDataFrame['TRACK_WIDTH'] = trainDataFrame['TRACK_EDGE_0'] + trainDataFrame[
 #trainDataFrame = trainDataFrame[['ACCELERATION', 'STEERING', 'TRACK_POSITION', 'ANGLE_TO_TRACK_AXIS', 'TRACK_EDGE_0',
 #                                 'TRACK_EDGE_7', 'TRACK_EDGE_9', 'TRACK_EDGE_11', 'TRACK_EDGE_18', 'MAX_DISTANCE',
 #                                 'CORNER', 'TRACK_WIDTH', 'SPEED']]
-trainDataFrame = trainDataFrame[['STEERING', 'TRACK_POSITION', 'ANGLE_TO_TRACK_AXIS', 'MAX_DISTANCE', 'CORNER',
+trainDataFrame = trainDataFrame[['ACCELERATION', 'STEERING', 'TRACK_POSITION', 'ANGLE_TO_TRACK_AXIS', 'MAX_DISTANCE', 'CORNER',
                                  'TRACK_WIDTH', 'SPEED']]
 
 scalingFactor = trainDataFrame.drop(['SPEED'], axis=1).abs().max(axis=0)
