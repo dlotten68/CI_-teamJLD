@@ -38,7 +38,7 @@ recover_speed = 17/MPS_PER_KMH # maximum speed to end recovery
 speed_correction = 100 # constant to bound steering
 max_steer_degrees = 45 # maximum steering angle of program
 sensor_max_dist = 200 # max distance sensor of program
-center_coef = 10 # Steering to the middle, the higher the more in the middle - van 10 --> 11
+center_coef = 5 # Steering to the middle, the higher the more in the middle - van 10 --> 11
 recover_time = 1
 align_coef = 1
 center_coef = 5
@@ -80,65 +80,67 @@ class MyDriver(Driver):
         global recover
 
         command = Command()
-        print("==========================================")
+#        print("==========================================")
 
 
 
         corner = self.cornerLearner(carstate)
         speed = math.sqrt(math.pow(carstate.speed_x,2)+math.pow(carstate.speed_y,2)+math.pow(carstate.speed_z,2))
-        print("speed" + repr(speed))
+    #    print("speed" + repr(speed))
         if(speed < rho_speed):
             rho = rho_slow
         else:
             rho = rho_fast
 
         if recover > 0:
-            if abs(carstate.distance_from_center) < 0.4 and abs(carstate.angle) < rho:
+            if abs(carstate.distance_from_center) < 0.4 and abs(carstate.angle) < 10:
+#                print("dist from center : " + repr(carstate.distance_from_center) + "angle < 10" )
                 recover = 0
             else:
                 recover = 1
+    #            print("recover")
 
-        if (stuckCounter>stuck_time) or (abs(carstate.angle) > rho and abs(carstate.distance_from_center) >= max_dist_centre and (carstate.distance_from_center*carstate.angle)<0.0) and carstate.speed_x<10/MPS_PER_KMH:
+        if (stuckCounter>stuck_time) or (abs(carstate.angle) > rho  and (carstate.distance_from_center*carstate.angle)<0.0 and carstate.speed_x<5/MPS_PER_KMH): #and abs(carstate.distance_from_center) >= max_dist_centre
             wrongwayCounter = 0
             bermCounter = 0
             offtrackCounter = 0
             stuckCounter += 1
-            print("stuckCounter: " + repr(stuckCounter))
+    #        print("stuckCounter: " + repr(stuckCounter))
             self.iAmStuck(carstate, speed, command, corner)
         elif (wrongwayCounter > wrongway_time) or (abs(carstate.angle)>wrong_way_angle and carstate.gear >=0):
             stuckCounter = 0
             bermCounter = 0
             offtrackCounter = 0
             wrongwayCounter +=1
-            print("wrongwayCounter: " + repr(wrongwayCounter))
+    #        print("wrongwayCounter: " + repr(wrongwayCounter))
             self.wrongway(carstate, speed, command, corner)
         elif (bermCounter>berm_time) or (abs(carstate.distance_from_center)>max_dist_centre and abs(carstate.distance_from_center)<berm_dist_centre and abs(carstate.wheel_velocities[0]-carstate.wheel_velocities[1])>berm_wheel_speed and abs(carstate.wheel_velocities[2]-carstate.wheel_velocities[3])>berm_wheel_speed):
             stuckCounter = 0
             wrongwayCounter = 0
             #offtrackCounter = 0
             bermCounter +=1
-            print("bermCounter: " + repr(bermCounter))
+#            print("bermCounter: " + repr(bermCounter))
             self.bermSolver(carstate, speed, command, corner)
         elif (offtrackCounter>offtrack_time) or (abs(carstate.distance_from_center)>max_dist_centre):
             stuckCounter = 0
             wrongwayCounter = 0
             bermCounter = 0
             offtrackCounter +=1
-            print("offtrackCounter: " + repr(offtrackCounter))
+    #        print("offtrackCounter: " + repr(offtrackCounter))
             self.offTrack(carstate, speed, command, corner)
         elif(abs(carstate.angle) > rho):
             stuckCounter = 0
             wrongwayCounter = 0
             bermCounter = 0
             offtrackCounter = 0
-            print("adjustedSteer")
+    #        print("adjustedSteer")
             self.adjustSteering(carstate, speed, command)
         else:
             stuckCounter = 0
             wrongwayCounter = 0
             bermCounter = 0
             offtrackCounter = 0
-            print("standardSteer")
+#            print("standardSteer")
             self.standardSteering(carstate, speed, command, corner)
 
         if self.data_logger:
@@ -161,21 +163,21 @@ class MyDriver(Driver):
         if stuckCounter < stuck_time or carstate.distance_from_center*carstate.angle > 0.0: # met je neus de goede kant op isniet stuck
             self.standardSteering(carstate, speed, command, corner)
         else:
-            if abs(carstate.angle) > rho and abs(carstate.distance_from_center) > 0.05 and (carstate.distance_from_center*carstate.angle)<0.0:
-                print("waar stuck0")
+            if abs(carstate.angle) > rho and abs(carstate.distance_from_center) > 0.5 and (carstate.distance_from_center*carstate.angle)<0.0:
+        #        print("waar stuck0")
                 steering = -carstate.angle / 45
                 gear = -1
                 brake = 0
                 accelerate = 18
                 recovery = True
             elif speed > recover_speed and (abs(carstate.angle) < rho):
-                print("waar stuck1")
+    #            print("waar stuck1")
                 steering = 0
                 gear = 1
                 brake = 1
                 accelerate = 0
             else:
-                print("waar stuck2")
+    #            print("waar stuck2")
                 recovery = False
                 stuckCounter = 0
                 gear = 1
@@ -296,6 +298,7 @@ class MyDriver(Driver):
         global recover
 
         steering = self.avoidance(1, carstate.angle/max_steer_degrees, carstate)
+#        steering = carstate.angle/max_steer_degrees
         steering = self.steeringBounds(steering, speed)
         if carstate.gear == -1:
             gear = 1
@@ -316,27 +319,43 @@ class MyDriver(Driver):
         global align_coef
         global center_coef
         global furthest_coef
-
-        align_coef = 1
-        center_coef = 11
-        furthest_coef = 1
         sensor_degrees = [90, 75, 60, 45, 30, 20, 15, 10, 0, -10, -15, \
                             -20, -30, -45, -60, -75, -90] # Sign inversed to correspond to steering
         steeringDegrees = [1, 1, 1, 1, 0.8, 0.6, 0.45, 0.2, 0, \
-				    -0.2, -0.45, -0.6, -0.8, -1, -1, -1, -1]
+                    -0.2, -0.45, -0.6, -0.8, -1, -1, -1, -1]
                     # 0, 5, 10, 15, 20, 30, 45, 60, 75, 90
         if(max(carstate.distances_from_edge) == -1) or carstate.angle > rho:
             steering = (carstate.angle - center_coef * carstate.distance_from_center)/max_steer_degrees
         else:
-            degreesAlign = align_coef*carstate.angle
-            degreesMiddle = center_coef*carstate.distance_from_center
-            degreesFurthest = furthest_coef*sensor_degrees[np.argmax(np.array(carstate.distances_from_edge)[[0,1,2,3,4,5,6,7,9,11,12,13,14,15,16,17,18]])]
-            steering = degreesFurthest*(1-abs(carstate.distance_from_center)) + (degreesAlign-degreesMiddle)*abs(carstate.distance_from_center)
-
+            degreesAllignMiddle = (carstate.angle - center_coef * carstate.distance_from_center)
+            degreesFurthest = sensor_degrees[np.argmax(np.array(carstate.distances_from_edge)[[0,1,2,3,4,5,6,7,9,11,12,13,14,15,16,17,18]])]
+            steering = degreesFurthest*(1-abs(carstate.distance_from_center)) + degreesAllignMiddle*abs(carstate.distance_from_center)
+            steerIndex = min(range(len(sensor_degrees)), key=lambda i: abs(sensor_degrees[i] - steering))
+            steering = steeringDegrees[steerIndex]
+        # align_coef = 1
+        # center_coef = 11
+        # furthest_coef = 1
+        # sensor_degrees = [90, 75, 60, 45, 30, 20, 15, 10, 0, -10, -15, \
+        #                     -20, -30, -45, -60, -75, -90] # Sign inversed to correspond to steering
+        # steeringDegrees = [1, 1, 1, 1, 0.8, 0.6, 0.45, 0.2, 0, \
+		# 		    -0.2, -0.45, -0.6, -0.8, -1, -1, -1, -1]
+        #             # 0, 5, 10, 15, 20, 30, 45, 60, 75, 90
+        # if(max(carstate.distances_from_edge) == -1) or carstate.angle > rho:
+        #     steering = (carstate.angle - center_coef * carstate.distance_from_center)/max_steer_degrees
+        # else:
+        #     degreesAlign = align_coef*carstate.angle
+        #     degreesMiddle = center_coef*carstate.distance_from_center
+        #     degreesFurthest = furthest_coef*sensor_degrees[np.argmax(np.array(carstate.distances_from_edge)[[0,1,2,3,4,5,6,7,9,11,12,13,14,15,16,17,18]])]
+        #     steering = degreesFurthest*(1-abs(carstate.distance_from_center)) + (degreesAlign-degreesMiddle)*abs(carstate.distance_from_center)
+        #
         steering = self.avoidance(0, steering, carstate)
         steering = self.steeringBounds(steering, speed)
 
         target_speed = self.speedNEAT(corner, carstate)
+
+        if recover > 0:
+            target_speed = recover_speed_kmh
+
 
         speed_error = 1.0025 * target_speed * MPS_PER_KMH - speed
         AB = 2*(.5-1/(1+math.exp(speed_error)))
@@ -359,25 +378,26 @@ class MyDriver(Driver):
     def commands(self, carstate, brake, accelerate, steering, gear, command):
         global lastSteering
         global accelerationPrevious
-        print("brake:" + repr(brake))
-        print("accelerate:" + repr(accelerate))
-        print("steering:" + repr(steering))
-        print("gear:" + repr(gear) + " carstate: "+repr(carstate.gear) + " command: "+repr(command.gear) + " rpm "+repr(carstate.rpm))
+        # print("brake:" + repr(brake))
+        # print("accelerate:" + repr(accelerate))
+        # print("steering:" + repr(steering))
+        # print("gear:" + repr(gear) + " carstate: "+repr(carstate.gear) + " command: "+repr(command.gear) + " rpm "+repr(carstate.rpm))
         command.steering = self.steering_ctrl.control(
                 steering,
                 carstate.current_lap_time
         )
+#        print("command.steering: " + repr(command.steering))
         lastSteering = steering
         command.brake = brake
         speed = math.sqrt(math.pow(carstate.speed_x,2)+math.pow(carstate.speed_y,2)+math.pow(carstate.speed_z,2))
-        print("speed in kmh"  + repr(round(speed/MPS_PER_KMH)))
+#        print("speed in kmh"  + repr(round(speed/MPS_PER_KMH)))
         speed_error = 1.0025 * accelerate * MPS_PER_KMH - speed
         AB = 2*(.5-1/(1+math.exp(speed_error)))
         # AB = accelerate + brake
         # speed_error = np.log(AB/(1-AB))
         # speed_accel_ms = 1.00025 * speed_error/3.6
         #
-        print("accelerate " + repr(round(accelerate)))
+#        print("target speed " + repr(round(accelerate)))
         acceleration = self.acceleration_ctrl.control(
             speed_error,
             carstate.current_lap_time
@@ -387,8 +407,8 @@ class MyDriver(Driver):
 #        command.accelerator = min(acceleration,1) # dit waseerst min(accelerate, 1)
         command.accelerator = max(AB,0) #
 
-        print("en wat is hier de command.accelerator " + repr(command.accelerator) + " en de acceleration " + repr(acceleration))
-        print("AB " + repr(AB))
+#        print("en wat is hier de command.accelerator " + repr(command.accelerator) + " en de acceleration " + repr(acceleration))
+    #    print("AB " + repr(AB))
         # stabilize use of gas and brake:
         # acceleration = math.pow(acceleration, 3)
         accelerationPrevious = command.accelerator
@@ -400,7 +420,7 @@ class MyDriver(Driver):
 #            print("deze 45")
         elif ((gear == 2 or gear == 3 or gear == 4) and carstate.rpm <= 3000):
             command.gear = gear - 1
-#            print("deze dan? ")
+    #        print("deze dan? ")
         elif ((gear == 5 or gear == 6) and carstate.rpm <= 3500):
             command.gear = gear - 1
 #            print("of deze dan")
@@ -408,8 +428,10 @@ class MyDriver(Driver):
             command.gear = -1
         elif gear == 1:
             command.gear = 1
+#            print("de voorlaatste")
         elif not command.gear:
             command.gear = carstate.gear or 1
+    #        print("not command =  gsg " + repr(carstate.gear) + "de commandgear " + repr(command.gear))
 #        print("de echte command gear" + repr(command.gear))
         #print("gear:" + repr(gear) + " carstate: "+repr(carstate.gear) + " command: "+repr(command.gear) + " rpm "+repr(carstate.rpm))
 
@@ -462,7 +484,7 @@ class MyDriver(Driver):
 
         if(min_sensor == 17 and min_range<=10 or min_sensor == 18 and min_range <= 10): # closest opp dead ahead and close
         #    steering -= 0.1 # steer a little to the right
-            print("collision imminent")
+    #        print("collision imminent")
             if(steerkind == 1):
                 if(steering < 0):
                     steering -= 0.3*meeOfTegen # if we are on edge of track do not steer offTrack
@@ -482,6 +504,7 @@ class MyDriver(Driver):
             # we will not go off track to avoid a collision. If the new steer will get us off track, we will revert to our original steer
         if((steerkind == 1 or abs(carstate.distance_from_center) > 0.8) and carstate.distance_from_center*steering>0): #if we are on the edge and intend to steer more in that direction, revert to plan
             steering = steerplan
+#        print("minsensor: " + repr(min_sensor))
 
     #    print("minsensor = " + repr(min_sensor))
     #    print("mindist = " + repr(min_range))
@@ -568,11 +591,11 @@ class MyDriver(Driver):
         lastSteering,
         carstate.distance_from_center,
         carstate.angle,
-        carstate.distances_from_edge[0],
-        carstate.distances_from_edge[7],
-        carstate.distances_from_edge[9],
-        carstate.distances_from_edge[11],
-        carstate.distances_from_edge[18],
+          #carstate.distances_from_edge[0],
+          #carstate.distances_from_edge[7],
+          #carstate.distances_from_edge[9],
+          #carstate.distances_from_edge[11],
+          #carstate.distances_from_edge[18],
         max(carstate.distances_from_edge),
         self.cornerLearner(carstate),
         carstate.distances_from_edge[0] + carstate.distances_from_edge[18]]
@@ -584,5 +607,5 @@ class MyDriver(Driver):
             # data[2] is speedFactor
         inputList = np.divide(np.asarray(inputList), np.asarray(data[1]))
         prediction = data[0].activate(inputList)[0]*data[2]
-        print("Speedprediction: " + repr(prediction))
+#        print("Speedprediction: " + repr(prediction))
         return prediction
